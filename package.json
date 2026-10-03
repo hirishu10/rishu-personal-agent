@@ -1,0 +1,18 @@
+{
+  "name": "rishu-personal-agent",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n \"API,WEB\" -c \"cyan.bold,magenta.bold\" \"pnpm --filter @agent/api dev\" \"pnpm --filter @agent/web dev\"",
+    "dev:api": "pnpm --filter @agent/api dev",
+    "dev:web": "pnpm --filter @agent/web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.0"
+  }
+}
