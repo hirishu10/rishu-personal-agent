@@ -1,24 +1,44 @@
 import { Injectable } from '@nestjs/common';
-import { LearningEntry } from './learning.types.js';
+
+export interface LearningRecord {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  topic?: string;
+  createdAt: Date;
+}
 
 @Injectable()
 export class LearningService {
-  private entries: LearningEntry[] = [];
+  private notes: LearningRecord[] = [];
 
-  async logLearning(entry: Omit<LearningEntry, 'id' | 'createdAt'>): Promise<LearningEntry> {
-    const newEntry: LearningEntry = {
-      id: String(this.entries.length + 1),
-      ...entry,
+  async create(data: {
+    userId: string;
+    title: string;
+    content: string;
+    topic?: string;
+  }) {
+    const newNote: LearningRecord = {
+      id: String(this.notes.length + 1),
+      userId: data.userId,
+      title: data.title,
+      content: data.content,
+      topic: data.topic,
       createdAt: new Date(),
     };
-    this.entries.push(newEntry);
-    return newEntry;
+    this.notes.push(newNote);
+    return newNote;
   }
 
-  async getLearnings(topic?: string): Promise<LearningEntry[]> {
-    if (topic) {
-      return this.entries.filter((e) => e.topic.toLowerCase().includes(topic.toLowerCase()));
-    }
-    return this.entries;
+  async search(userId: string, topic?: string) {
+    return this.notes.filter((note) => {
+      const userMatches = note.userId === userId;
+      if (!topic) return userMatches;
+      const topicMatches =
+        note.topic?.toLowerCase().includes(topic.toLowerCase()) ||
+        note.title.toLowerCase().includes(topic.toLowerCase());
+      return userMatches && topicMatches;
+    });
   }
 }

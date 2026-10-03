@@ -1,35 +1,67 @@
-import { Injectable } from '@nestjs/common';
-import { ToolDefinition } from '../../agent/tool-registry.js';
+import {
+  AgentTool,
+  AgentToolContext,
+} from '../../agent/agent.types.js';
 import { TasksService } from './tasks.service.js';
 
-@Injectable()
-export class TasksTool implements ToolDefinition {
+export class TasksTool implements AgentTool {
   name = 'tasks';
-  description = 'Manage personal tasks and todos';
-  parameters = {
-    type: 'object',
-    properties: {
-      action: { type: 'string', enum: ['list', 'create'] },
-      title: { type: 'string' },
-      description: { type: 'string' },
-      status: { type: 'string', enum: ['pending', 'in_progress', 'completed'] },
-    },
-    required: ['action'],
-  };
 
-  constructor(private readonly tasksService: TasksService) {}
+  description = `
+Use this tool to manage Rishu's personal developer tasks.
 
-  async execute(params: any) {
-    if (params.action === 'list') {
-      return this.tasksService.listTasks();
+Capabilities:
+- Create task
+- List tasks
+- Complete task
+- Update task
+- Delete task
+`;
+
+  constructor(
+    private readonly tasksService: TasksService,
+  ) {}
+
+  async execute(
+    input: unknown,
+    context: AgentToolContext,
+  ): Promise<unknown> {
+    const request = input as {
+      action: string;
+      title?: string;
+      taskId?: string;
+    };
+
+    switch (request.action) {
+      case 'create':
+        if (!request.title) {
+          throw new Error('Task title is required');
+        }
+
+        return this.tasksService.create({
+          userId: context.userId,
+          title: request.title,
+        });
+
+      case 'list':
+        return this.tasksService.findAll(
+          context.userId,
+        );
+
+      case 'complete':
+        if (!request.taskId) {
+          throw new Error('Task ID is required');
+        }
+
+        return this.tasksService.complete(
+          context.userId,
+          request.taskId,
+        );
+
+      default:
+        throw new Error(
+          `Unsupported task action: ${request.action}`,
+        );
     }
-    if (params.action === 'create') {
-      return this.tasksService.createTask({
-        title: params.title,
-        description: params.description,
-        status: params.status || 'pending',
-      });
-    }
-    throw new Error(`Unsupported action: ${params.action}`);
   }
 }

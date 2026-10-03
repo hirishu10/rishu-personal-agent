@@ -1,32 +1,56 @@
-import { Injectable } from '@nestjs/common';
-import { ToolDefinition } from '../../agent/tool-registry.js';
-import { GitHubService } from './github.service.js';
+import {
+  AgentTool,
+  AgentToolContext,
+} from '../../agent/agent.types.js';
+import { GithubService } from './github.service.js';
 
-@Injectable()
-export class GitHubTool implements ToolDefinition {
+export class GithubTool implements AgentTool {
   name = 'github';
-  description = 'Interact with GitHub repositories and issues';
-  parameters = {
-    type: 'object',
-    properties: {
-      action: { type: 'string', enum: ['listRepos', 'createIssue'] },
-      owner: { type: 'string' },
-      repo: { type: 'string' },
-      title: { type: 'string' },
-      body: { type: 'string' },
-    },
-    required: ['action'],
-  };
 
-  constructor(private readonly githubService: GitHubService) {}
+  description = `
+Use this tool to access Rishu's GitHub information.
 
-  async execute(params: any) {
-    if (params.action === 'listRepos') {
-      return this.githubService.listRepositories();
+Capabilities:
+- Get GitHub profile
+- List repositories
+- Get repository information
+- Get recent commits
+- Get issues
+- Get pull requests
+`;
+
+  constructor(
+    private readonly githubService: GithubService,
+  ) {}
+
+  async execute(
+    input: unknown,
+    context: AgentToolContext,
+  ): Promise<unknown> {
+    const request = input as {
+      action: string;
+      repository?: string;
+    };
+
+    switch (request.action) {
+      case 'profile':
+        return this.githubService.getProfile(context.userId);
+
+      case 'repositories':
+        return this.githubService.getRepositories(
+          context.userId,
+        );
+
+      case 'commits':
+        return this.githubService.getRecentCommits(
+          context.userId,
+          request.repository,
+        );
+
+      default:
+        throw new Error(
+          `Unsupported GitHub action: ${request.action}`,
+        );
     }
-    if (params.action === 'createIssue') {
-      return this.githubService.createIssue(params);
-    }
-    throw new Error(`Unsupported action: ${params.action}`);
   }
 }

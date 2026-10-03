@@ -1,13 +1,30 @@
 import { Injectable } from '@nestjs/common';
-import { CreateIssueInput, GitHubRepo } from './github.types.js';
 
 @Injectable()
-export class GitHubService {
-  async listRepositories(): Promise<GitHubRepo[]> {
-    return [];
+export class GithubService {
+  async getProfile(userId: string) {
+    return {
+      userId,
+      username: 'hirishu10',
+      bio: 'Software Engineer & AI Enthusiast',
+      publicRepos: 12,
+    };
   }
 
-  async createIssue(input: CreateIssueInput): Promise<{ id: number; url: string }> {
-    return { id: 1, url: `https://github.com/${input.owner}/${input.repo}/issues/1` };
+  async getRepositories(userId: string) {
+    return [
+      { name: 'rishu-personal-agent', private: false, language: 'TypeScript' },
+      { name: 'learning-notes', private: true, language: 'Markdown' },
+    ];
+  }
+
+  async getRecentCommits(userId: string, repository?: string) {
+    return [
+      {
+        repository: repository || 'rishu-personal-agent',
+        message: 'feat: setup agent architecture and tools',
+        timestamp: new Date().toISOString(),
+      },
+    ];
   }
 }

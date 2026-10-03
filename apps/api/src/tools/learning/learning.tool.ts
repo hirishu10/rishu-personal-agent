@@ -1,35 +1,62 @@
-import { Injectable } from '@nestjs/common';
-import { ToolDefinition } from '../../agent/tool-registry.js';
+import {
+  AgentTool,
+  AgentToolContext,
+} from '../../agent/agent.types.js';
 import { LearningService } from './learning.service.js';
 
-@Injectable()
-export class LearningTool implements ToolDefinition {
-  name = 'learning';
-  description = 'Log and retrieve learning summaries and topics';
-  parameters = {
-    type: 'object',
-    properties: {
-      action: { type: 'string', enum: ['log', 'get'] },
-      topic: { type: 'string' },
-      summary: { type: 'string' },
-      tags: { type: 'array', items: { type: 'string' } },
-    },
-    required: ['action'],
-  };
+export class LearningTool implements AgentTool {
+  name = 'learning_notes';
 
-  constructor(private readonly learningService: LearningService) {}
+  description = `
+Use this tool to manage Rishu's developer learning notes.
 
-  async execute(params: any) {
-    if (params.action === 'log') {
-      return this.learningService.logLearning({
-        topic: params.topic,
-        summary: params.summary,
-        tags: params.tags,
-      });
+Capabilities:
+- Create learning note
+- Search learning notes
+- Get notes by topic
+- Update notes
+`;
+
+  constructor(
+    private readonly learningService: LearningService,
+  ) {}
+
+  async execute(
+    input: unknown,
+    context: AgentToolContext,
+  ): Promise<unknown> {
+    const request = input as {
+      action: string;
+      title?: string;
+      content?: string;
+      topic?: string;
+    };
+
+    switch (request.action) {
+      case 'create':
+        if (!request.title || !request.content) {
+          throw new Error(
+            'Title and content are required',
+          );
+        }
+
+        return this.learningService.create({
+          userId: context.userId,
+          title: request.title,
+          content: request.content,
+          topic: request.topic,
+        });
+
+      case 'search':
+        return this.learningService.search(
+          context.userId,
+          request.topic,
+        );
+
+      default:
+        throw new Error(
+          `Unsupported learning action: ${request.action}`,
+        );
     }
-    if (params.action === 'get') {
-      return this.learningService.getLearnings(params.topic);
-    }
-    throw new Error(`Unsupported action: ${params.action}`);
   }
 }
